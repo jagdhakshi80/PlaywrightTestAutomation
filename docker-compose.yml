@@ -1,0 +1,39 @@
+
+services:
+  playwright-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: playwright-test-container
+
+    ports:
+      - "6080:6080"
+
+    volumes:
+      - ./tests:/app/tests
+      - ./pages:/app/pages
+      - ./auth:/app/auth
+      - ./reports:/app/reports
+      - ./test-results:/app/test-results
+
+    environment:
+      DISPLAY: ":99"
+      PYTHONUNBUFFERED: "1"
+      BASE_URL: "https://www.saucedemo.com/"
+
+    shm_size: "2gb"
+
+    command: >
+      bash -c "
+      Xvfb :99 -screen 0 1440x900x24 -ac &
+      sleep 2 &&
+      x11vnc -display :99 -forever -shared -nopw -listen 0.0.0.0 -rfbport 5900 &
+      sleep 2 &&
+      websockify --web=/usr/share/novnc/ 6080 localhost:5900 &
+      sleep 2 &&
+      pytest tests/ -v
+      --html=reports/report.html
+      --self-contained-html
+      --junitxml=test-results/junit.xml
+      "

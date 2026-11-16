@@ -1,0 +1,55 @@
+
+name: Playwright Automation CI-CD
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  playwright-tests:
+
+    name: Execute Playwright Tests
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Step 1 - Checkout repository
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # Step 2 - Build Docker container
+      - name: Build Playwright Docker Image
+        run: docker compose build
+
+      # Step 3 - Execute automated tests
+      - name: Run Playwright Automation
+        run: docker compose run --rm playwright-tests
+
+      # Step 4 - Upload HTML reports
+      - name: Publish Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Playwright-Test-Reports
+          path: |
+            reports/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Step 5 - Docker cleanup
+      - name: Cleanup Docker
+        if: always()
+        run: docker compose down --remove-orphans
